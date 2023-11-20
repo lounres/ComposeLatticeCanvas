@@ -7,32 +7,28 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.IntOffset
 import dev.lounres.kone.misc.lattices.Position
-import dev.lounres.kone.misc.lattices.TriangleKind
+import dev.lounres.kone.misc.lattices.QuadroSquareKind
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 
 
-public object TriangleLatticeCanvas: LatticeCanvas<Pair<Int, Int>, TriangleKind>() {
-    private const val oneOverSqrtThree: Float = 0.57735026f
-    private const val sqrtThree: Float = 1.7320508f
-
-    override val kinds: Set<TriangleKind> = TriangleKind.entries.toSet()
-    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset =
-        Offset(
-            (fieldOffset.x - oneOverSqrtThree * fieldOffset.y) / tileActualSize,
-            (2 * oneOverSqrtThree * fieldOffset.y) / tileActualSize
-        )
-    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset =
-        Offset(
-            (latticeOffset.x + latticeOffset.y / 2) * tileActualSize,
-            (sqrtThree / 2 * latticeOffset.y) * tileActualSize
-        )
-    override fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<Pair<Int, Int>, TriangleKind> {
+public object QuadroSquareLatticeCanvas: LatticeCanvas<Pair<Int, Int>, QuadroSquareKind>() {
+    override val kinds: Set<QuadroSquareKind> = QuadroSquareKind.entries.toSet()
+    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset = fieldOffset / tileActualSize
+    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset = latticeOffset * tileActualSize
+    override fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<Pair<Int, Int>, QuadroSquareKind> {
         val latticeX = floor(latticeOffset.x)
         val latticeY = floor(latticeOffset.y)
-        val kind = if ((latticeOffset.x - latticeX) + (latticeOffset.y - latticeY) > 1) TriangleKind.Down else TriangleKind.Up
+        val restX = latticeOffset.x - latticeX
+        val restY = latticeOffset.y - latticeY
+        val kind = when {
+            restX + restY > 1 && restX > restY -> QuadroSquareKind.Right
+            restX + restY > 1 && restX <= restY -> QuadroSquareKind.Up
+            restX + restY < 1 && restX > restY -> QuadroSquareKind.Down
+            else -> QuadroSquareKind.Left
+        }
         return Position(Pair(latticeX.toInt(), latticeY.toInt()), kind)
     }
     override fun discreteLatticeCoordinatesToPositionCoordinates(latticeOffset: IntOffset): Pair<Int, Int> = Pair(latticeOffset.x, latticeOffset.y)
@@ -42,7 +38,6 @@ public object TriangleLatticeCanvas: LatticeCanvas<Pair<Int, Int>, TriangleKind>
         latticeOffset01: Offset,
         latticeOffset11: Offset
     ): Sequence<IntOffset>  = sequence {
-        // TODO: Optimise the turning over cells.
         val startCell = IntOffset(
             floor(min(min(latticeOffset00.x, latticeOffset10.x), min(latticeOffset01.x, latticeOffset11.x))).toInt(),
             floor(min(min(latticeOffset00.y, latticeOffset10.y), min(latticeOffset01.y, latticeOffset11.y))).toInt(),
@@ -56,18 +51,30 @@ public object TriangleLatticeCanvas: LatticeCanvas<Pair<Int, Int>, TriangleKind>
         for (xi in startCell.x .. endCell.x) for (yi in startCell.y .. endCell.y) yield(IntOffset(xi, yi))
     }
 
-    override fun contourOf(kind: TriangleKind, tileActualSize: Float): Path =
+    override fun contourOf(kind: QuadroSquareKind, tileActualSize: Float): Path =
         when(kind) {
-            TriangleKind.Up -> Path().apply {
-                moveTo(0f, 0f)
-                lineTo(tileActualSize, 0f)
-                lineTo(tileActualSize / 2,-tileActualSize * sqrtThree / 2)
+            QuadroSquareKind.Up -> Path().apply {
+                moveTo(0f, -tileActualSize)
+                lineTo(tileActualSize/2, -tileActualSize/2)
+                lineTo(tileActualSize, -tileActualSize)
                 close()
             }
-            TriangleKind.Down -> Path().apply {
-                moveTo(tileActualSize * 3 / 2, -tileActualSize * sqrtThree / 2)
+            QuadroSquareKind.Down -> Path().apply {
+                moveTo(0f, 0f)
+                lineTo(tileActualSize/2, -tileActualSize/2)
                 lineTo(tileActualSize, 0f)
-                lineTo(tileActualSize / 2,-tileActualSize * sqrtThree / 2)
+                close()
+            }
+            QuadroSquareKind.Left -> Path().apply {
+                moveTo(0f, -tileActualSize)
+                lineTo(tileActualSize/2, -tileActualSize/2)
+                lineTo(0f, 0f)
+                close()
+            }
+            QuadroSquareKind.Right -> Path().apply {
+                moveTo(tileActualSize, -tileActualSize)
+                lineTo(tileActualSize/2, -tileActualSize/2)
+                lineTo(tileActualSize, 0f)
                 close()
             }
         }
@@ -76,9 +83,12 @@ public object TriangleLatticeCanvas: LatticeCanvas<Pair<Int, Int>, TriangleKind>
         drawPath(
             path = Path().apply {
                 moveTo(0f, 0f)
-                lineTo(tileActualSize, 0f)
-                lineTo(tileActualSize / 2,-tileActualSize * sqrtThree / 2)
-                close()
+                lineTo(tileActualSize/2, -tileActualSize/2)
+                lineTo(tileActualSize,0f)
+                lineTo(0f, 0f)
+                lineTo(0f, -tileActualSize)
+                lineTo(tileActualSize/2, -tileActualSize/2)
+                lineTo(tileActualSize, -tileActualSize)
             },
             color = Color.Black,
             style = Stroke(),
