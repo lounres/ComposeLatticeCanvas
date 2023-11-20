@@ -88,13 +88,13 @@ public abstract class LatticeCanvas<C, K> {
         ) {
             clipRect {
                 val cellsToDraw = screenLatticeCoordinatesToDiscreteLatticeCoordinatesSequence(
-                    latticeOffset00 = fieldCoordinatesToLatticeCoordinates(fieldOffset, tileActualSize),
-                    latticeOffset10 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width, 0f), tileActualSize),
-                    latticeOffset01 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(0f, size.height), tileActualSize),
-                    latticeOffset11 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width, size.height), tileActualSize),
+                    latticeOffset00 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(-size.width/2, -size.height/2), tileActualSize),
+                    latticeOffset10 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width/2, -size.height/2), tileActualSize),
+                    latticeOffset01 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(-size.width/2, size.height/2), tileActualSize),
+                    latticeOffset11 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width/2, size.height/2), tileActualSize),
                 )
 
-                translate(-fieldOffset.x, fieldOffset.y) {
+                translate(size.width/2-fieldOffset.x, -size.height/2+fieldOffset.y) {
                     for (cell in cellsToDraw) {
                         val (startX, startY) = latticeCoordinatesToFieldCoordinates(Offset(cell.x.toFloat(), cell.y.toFloat()), tileActualSize)
                         translate(startX, size.height - startY) { cellContours(cell, tileActualSize) }
