@@ -18,19 +18,19 @@ import dev.lounres.kone.misc.lattices.Position
 
 
 public abstract class LatticeCanvas<C, K> {
-    protected abstract val kinds: Set<K>
-    protected abstract fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset
-    protected abstract fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset
-    protected abstract fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<C, K>
-    protected abstract fun discreteLatticeCoordinatesToPositionCoordinates(latticeOffset: IntOffset): C
-    protected abstract fun screenLatticeCoordinatesToDiscreteLatticeCoordinatesSequence(
+    public abstract val kinds: Set<K>
+    public abstract fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset
+    public abstract fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset
+    public abstract fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<C, K>
+    public abstract fun discreteLatticeCoordinatesToPositionCoordinates(latticeOffset: IntOffset): C
+    public abstract fun screenLatticeCoordinatesToDiscreteLatticeCoordinatesSequence(
         latticeOffset00: Offset,
         latticeOffset10: Offset,
         latticeOffset01: Offset,
         latticeOffset11: Offset
     ): Sequence<IntOffset>
-    protected abstract fun contourOf(kind: K, tileActualSize: Float): Path
-    protected abstract fun DrawScope.cellContours(latticeOffset: IntOffset, tileActualSize: Float)
+    public abstract fun contourOf(kind: K, tileActualSize: Float): Path
+    public abstract fun DrawScope.cellContours(latticeOffset: IntOffset, tileActualSize: Float)
 
 
     @Composable
@@ -39,14 +39,15 @@ public abstract class LatticeCanvas<C, K> {
         tileSize: Dp = 64.dp,
         zoomMin: Float = 0.1f,
         zoomMax: Float = 10f,
+        latticeCanvasState: LatticeCanvasState = rememberLatticeCanvasState(),
         onCellClick: (position: Position<C, K>) -> Unit = { _ -> },
-        onCellDraw: DrawScope.(position: Position<C, K>, tileSize: Float) -> Unit = { _, _ -> },
+        onCellDraw: DrawScope.(position: Position<C, K>, tileContour: Path, tileSize: Float) -> Unit = { _, _, _ -> },
         onDrawAbove: DrawScope.(fieldOffset: Offset, tileSize: Float) -> Unit = { _, _ -> }
     ) {
         val tileSizePx = LocalDensity.current.run { tileSize.toPx() }
 
-        var fieldOffset by remember { mutableStateOf(Offset(0f, 0f)) }
-        var fieldZoom by remember { mutableStateOf(1f) }
+        var fieldOffset by latticeCanvasState::fieldOffset
+        var fieldZoom by latticeCanvasState::fieldZoom
         val tileActualSize by remember { derivedStateOf { tileSizePx * fieldZoom } }
 
         Canvas(
@@ -80,7 +81,7 @@ public abstract class LatticeCanvas<C, K> {
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = {
-                            val actualOffset = Offset(it.x + fieldOffset.x, size.height - it.y + fieldOffset.y)
+                            val actualOffset = Offset(-size.width/2 + it.x + fieldOffset.x, size.height/2 - it.y + fieldOffset.y)
                             onCellClick(latticeCoordinatesToPosition(fieldCoordinatesToLatticeCoordinates(actualOffset, tileActualSize)))
                         }
                     )
@@ -103,10 +104,16 @@ public abstract class LatticeCanvas<C, K> {
                     for (cell in cellsToDraw) {
                         val (fieldX, fieldY) = latticeCoordinatesToFieldCoordinates(Offset(cell.x.toFloat(), cell.y.toFloat()), tileActualSize)
                         translate(fieldX, size.height - fieldY) {
-                            for (kind in kinds)
-                                clipPath(path = contourOf(kind, tileActualSize)) {
-                                    onCellDraw(Position(discreteLatticeCoordinatesToPositionCoordinates(cell), kind), tileActualSize)
+                            for (kind in kinds) {
+                                val contour = contourOf(kind, tileActualSize)
+                                clipPath(path = contour) {
+                                    onCellDraw(
+                                        Position(discreteLatticeCoordinatesToPositionCoordinates(cell), kind),
+                                        contour,
+                                        tileActualSize
+                                    )
                                 }
+                            }
                         }
                     }
                     onDrawAbove(fieldOffset, tileActualSize)
