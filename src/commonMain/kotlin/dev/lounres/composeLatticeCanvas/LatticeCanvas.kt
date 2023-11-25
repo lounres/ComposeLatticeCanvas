@@ -19,8 +19,8 @@ import dev.lounres.kone.misc.lattices.Position
 
 public abstract class LatticeCanvas<C, K> {
     public abstract val kinds: Set<K>
-    public abstract fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset
-    public abstract fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset
+    public abstract fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset): Offset
+    public abstract fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset): Offset
     public abstract fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<C, K>
     public abstract fun discreteLatticeCoordinatesToPositionCoordinates(latticeOffset: IntOffset): C
     public abstract fun screenLatticeCoordinatesToDiscreteLatticeCoordinatesSequence(
@@ -58,51 +58,51 @@ public abstract class LatticeCanvas<C, K> {
                             val event = awaitPointerEvent()
                             if (event.type == PointerEventType.Scroll) {
                                 val zoomDelta = -event.changes.last().scrollDelta.y / 10
-                                val pointer = event.changes.last().position.let { Offset(it.x, size.height - it.y) }
+                                val pointer = event.changes.last().position.let { Offset(-size.width/2 + it.x, size.height/2 - it.y) }
                                 if (fieldZoom + zoomDelta in zoomMin..zoomMax) {
                                     // zoom
                                     val oldZoom = fieldZoom
                                     fieldZoom += zoomDelta
 
                                     //mouse centered resize
-                                    val newLeftTop = (fieldOffset / oldZoom) * fieldZoom
-                                    val oldPointer = (pointer + fieldOffset) / oldZoom
+                                    val newLeftTop = fieldOffset * tileActualSize / oldZoom * fieldZoom
+                                    val oldPointer = (pointer + fieldOffset * tileActualSize) / oldZoom
                                     val newPointer = (pointer + newLeftTop) / fieldZoom
                                     val offDelta = newPointer - oldPointer
-                                    fieldOffset = newLeftTop - offDelta * fieldZoom
+                                    fieldOffset = (newLeftTop - offDelta * fieldZoom) / tileActualSize
                                 }
                             }
                         }
                     }
                 }
                 .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, _, _ -> fieldOffset -= Offset(pan.x, -pan.y) }
+                    detectTransformGestures { _, pan, _, _ -> fieldOffset -= Offset(pan.x, -pan.y) / tileActualSize }
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = {
-                            val actualOffset = Offset(-size.width/2 + it.x + fieldOffset.x, size.height/2 - it.y + fieldOffset.y)
-                            onCellClick(latticeCoordinatesToPosition(fieldCoordinatesToLatticeCoordinates(actualOffset, tileActualSize)))
+                            val actualOffset = Offset((-size.width/2 + it.x) / tileActualSize + fieldOffset.x, (size.height/2 - it.y) / tileActualSize + fieldOffset.y)
+                            onCellClick(latticeCoordinatesToPosition(fieldCoordinatesToLatticeCoordinates(actualOffset)))
                         }
                     )
                 }
         ) {
             clipRect {
                 val cellsToDraw = screenLatticeCoordinatesToDiscreteLatticeCoordinatesSequence(
-                    latticeOffset00 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(-size.width/2, -size.height/2), tileActualSize),
-                    latticeOffset10 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width/2, -size.height/2), tileActualSize),
-                    latticeOffset01 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(-size.width/2, size.height/2), tileActualSize),
-                    latticeOffset11 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width/2, size.height/2), tileActualSize),
+                    latticeOffset00 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(-size.width/2, -size.height/2) / tileActualSize),
+                    latticeOffset10 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width/2, -size.height/2) / tileActualSize),
+                    latticeOffset01 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(-size.width/2, size.height/2) / tileActualSize),
+                    latticeOffset11 = fieldCoordinatesToLatticeCoordinates(fieldOffset + Offset(size.width/2, size.height/2) / tileActualSize),
                 )
 
-                translate(size.width/2-fieldOffset.x, -size.height/2+fieldOffset.y) {
+                translate(size.width/2 - fieldOffset.x * tileActualSize, -size.height/2 + fieldOffset.y * tileActualSize) {
                     for (cell in cellsToDraw) {
-                        val (startX, startY) = latticeCoordinatesToFieldCoordinates(Offset(cell.x.toFloat(), cell.y.toFloat()), tileActualSize)
+                        val (startX, startY) = latticeCoordinatesToFieldCoordinates(Offset(cell.x.toFloat(), cell.y.toFloat())) * tileActualSize
                         translate(startX, size.height - startY) { cellContours(cell, tileActualSize) }
                     }
 
                     for (cell in cellsToDraw) {
-                        val (fieldX, fieldY) = latticeCoordinatesToFieldCoordinates(Offset(cell.x.toFloat(), cell.y.toFloat()), tileActualSize)
+                        val (fieldX, fieldY) = latticeCoordinatesToFieldCoordinates(Offset(cell.x.toFloat(), cell.y.toFloat())) * tileActualSize
                         translate(fieldX, size.height - fieldY) {
                             for (kind in kinds) {
                                 val contour = contourOf(kind, tileActualSize)

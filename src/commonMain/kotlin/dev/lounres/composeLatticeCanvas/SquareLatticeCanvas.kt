@@ -16,8 +16,8 @@ import kotlin.math.min
 
 public object SquareLatticeCanvas: LatticeCanvas<Pair<Int, Int>, SquareKind>() {
     override val kinds: Set<SquareKind> = setOf(SquareKind)
-    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset = fieldOffset / tileActualSize
-    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset = latticeOffset * tileActualSize
+    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset): Offset = fieldOffset
+    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset): Offset = latticeOffset
     override fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<Pair<Int, Int>, SquareKind> = Position(Pair(floor(latticeOffset.x).toInt(), floor(latticeOffset.y).toInt()), SquareKind)
     override fun discreteLatticeCoordinatesToPositionCoordinates(latticeOffset: IntOffset): Pair<Int, Int> = Pair(latticeOffset.x, latticeOffset.y)
     override fun screenLatticeCoordinatesToDiscreteLatticeCoordinatesSequence(

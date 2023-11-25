@@ -19,15 +19,15 @@ public object TriangleLatticeCanvas: LatticeCanvas<Pair<Int, Int>, TriangleKind>
     private const val sqrtThree: Float = 1.7320508f
 
     override val kinds: Set<TriangleKind> = TriangleKind.entries.toSet()
-    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset =
+    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset): Offset =
         Offset(
-            (fieldOffset.x - oneOverSqrtThree * fieldOffset.y) / tileActualSize,
-            (2 * oneOverSqrtThree * fieldOffset.y) / tileActualSize
+            (fieldOffset.x - oneOverSqrtThree * fieldOffset.y),
+            (2 * oneOverSqrtThree * fieldOffset.y),
         )
-    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset =
+    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset): Offset =
         Offset(
-            (latticeOffset.x + latticeOffset.y / 2) * tileActualSize,
-            (sqrtThree / 2 * latticeOffset.y) * tileActualSize
+            (latticeOffset.x + latticeOffset.y / 2),
+            (sqrtThree / 2 * latticeOffset.y),
         )
     override fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<Pair<Int, Int>, TriangleKind> {
         val latticeX = floor(latticeOffset.x)

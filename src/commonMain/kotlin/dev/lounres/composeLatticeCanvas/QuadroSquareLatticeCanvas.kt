@@ -16,8 +16,8 @@ import kotlin.math.min
 
 public object QuadroSquareLatticeCanvas: LatticeCanvas<Pair<Int, Int>, QuadroSquareKind>() {
     override val kinds: Set<QuadroSquareKind> = QuadroSquareKind.entries.toSet()
-    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset, tileActualSize: Float): Offset = fieldOffset / tileActualSize
-    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset, tileActualSize: Float): Offset = latticeOffset * tileActualSize
+    override fun fieldCoordinatesToLatticeCoordinates(fieldOffset: Offset): Offset = fieldOffset
+    override fun latticeCoordinatesToFieldCoordinates(latticeOffset: Offset): Offset = latticeOffset
     override fun latticeCoordinatesToPosition(latticeOffset: Offset): Position<Pair<Int, Int>, QuadroSquareKind> {
         val latticeX = floor(latticeOffset.x)
         val latticeY = floor(latticeOffset.y)
