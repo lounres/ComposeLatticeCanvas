@@ -58,18 +58,14 @@ public abstract class LatticeCanvas<C, K> {
                             val event = awaitPointerEvent()
                             if (event.type == PointerEventType.Scroll) {
                                 val zoomDelta = -event.changes.last().scrollDelta.y / 10
-                                val pointer = event.changes.last().position.let { Offset(-size.width/2 + it.x, size.height/2 - it.y) }
+                                val pointerFieldLocation = event.changes.last().position.let { Offset(-size.width/2 + it.x, size.height/2 - it.y) / tileActualSize }
                                 if (fieldZoom + zoomDelta in zoomMin..zoomMax) {
                                     // zoom
                                     val oldZoom = fieldZoom
                                     fieldZoom += zoomDelta
 
-                                    //mouse centered resize
-                                    val newLeftTop = fieldOffset * tileActualSize / oldZoom * fieldZoom
-                                    val oldPointer = (pointer + fieldOffset * tileActualSize) / oldZoom
-                                    val newPointer = (pointer + newLeftTop) / fieldZoom
-                                    val offDelta = newPointer - oldPointer
-                                    fieldOffset = (newLeftTop - offDelta * fieldZoom) / tileActualSize
+                                    // mouse centered resize
+                                    fieldOffset = (fieldOffset + pointerFieldLocation) / oldZoom * fieldZoom - pointerFieldLocation
                                 }
                             }
                         }

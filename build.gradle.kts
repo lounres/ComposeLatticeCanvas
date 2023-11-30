@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode
+import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -30,6 +31,11 @@ kotlin {
             }
         }
     }
+
+//    @OptIn(ExperimentalWasmDsl::class)
+//    wasmJs {
+//        browser()
+//    }
 
 //    androidTarget()
 //    iosX64()
